@@ -1,4 +1,4 @@
-# Discord **Bot** Token Creator
+# Discord BOT Token Creator (NOT A USER TOKEN CREATOR)
 🔹 **A tool for creating Discord bot tokens, `great for premium or VIP bot systems!`**
 This tool allows you to create as many Discord bot tokens as you need. It's safe to use and the code can be reviewed for added security. To avoid Discord limitations, it's recommended to use an alternate Discord account.
 
