@@ -44,6 +44,7 @@ public class PersonalDevAccount {
             System.out.println("NOW CREATING: " + standardName + " : " + i);
             String botId = generateANewTeamApp(standardName + " " + i, team.getId());
             String botToken = resetBotTokenByAppId(botId);
+            buildANewBotWithoutGettingTheToken(botId);
             bots.add(new Bot(standardName + " : " + i, botId, botToken));
             c++;
             if (c >= 25) {
@@ -228,6 +229,40 @@ public class PersonalDevAccount {
         return null;
     }
 
+    public void buildANewBotWithoutGettingTheToken(String botId) throws IOException {
+        // Create the request
+        Request request = new Request.Builder()
+                .url(API_URL + "/" + botId + "/bot")
+                .post(RequestBody.create(MediaType.get("application/json"), "{}"))
+                .addHeader("Authorization", token)
+                .build();
+
+        // Send the request and get the response
+        try (Response response = HTTP_CLIENT.newCall(request).execute()) {
+            if (response.isSuccessful()) {
+                System.out.println("success, created bot: " + botId);
+            } else {
+                // Request was not successful
+                if (response.code() == 429) {
+                    // Server returned a 429 response code, indicating that the client is being rate limited
+                    String retryAfterHeader = response.headers().get("Retry-After");
+                    if (retryAfterHeader != null) {
+                        // Retry-After header is present, parse the value to get the number of seconds to wait
+                        long retryAfterSeconds = Long.parseLong(retryAfterHeader);
+                        System.out.println("[SEND POST REQUEST] Retrying request in " + retryAfterSeconds / 1000 + " seconds");
+                        Thread.sleep(retryAfterSeconds);
+                        Thread.sleep(2000);
+                    }
+                } else {
+                    // Other non-successful response code, do something else here
+                    System.out.println("Request failed with response code " + response);
+                }
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     // ~~won't use these methods~~
     public String generateANewPersonalApp(String name) throws IOException {
@@ -285,42 +320,6 @@ public class PersonalDevAccount {
         return null;
     }
 
-
-    // ~~ won't use this method~~,
-    // but it can be used, to generate a bot without getting the token
-    public void buildANewBotWithoutGettingTheToken(String botId) throws IOException {
-        // Create the request
-        Request request = new Request.Builder()
-                .url(API_URL + "/" + botId + "/bot")
-                .post(RequestBody.create(MediaType.get("application/json"), "{}"))
-                .addHeader("Authorization", token)
-                .build();
-
-        // Send the request and get the response
-        try (Response response = HTTP_CLIENT.newCall(request).execute()) {
-            if (response.isSuccessful()) {
-                System.out.println("success, created bot: " + botId);
-            } else {
-                // Request was not successful
-                if (response.code() == 429) {
-                    // Server returned a 429 response code, indicating that the client is being rate limited
-                    String retryAfterHeader = response.headers().get("Retry-After");
-                    if (retryAfterHeader != null) {
-                        // Retry-After header is present, parse the value to get the number of seconds to wait
-                        long retryAfterSeconds = Long.parseLong(retryAfterHeader);
-                        System.out.println("[SEND POST REQUEST] Retrying request in " + retryAfterSeconds / 1000 + " seconds");
-                        Thread.sleep(retryAfterSeconds);
-                        Thread.sleep(2000);
-                    }
-                } else {
-                    // Other non-successful response code, do something else here
-                    System.out.println("Request failed with response code " + response);
-                }
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
 
     // ~~ won't use this method~~
     public List<Team> getTeams() throws IOException {
