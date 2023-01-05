@@ -45,9 +45,11 @@ public class PersonalDevAccount {
         for (int i = 0; i < amount; i++) {
             System.out.println("*********************");
             System.out.println("NOW CREATING: " + standardName + " : " + i);
+            logCreate("\n\nTEAM: " + team.getName() + " : " + team.getId() + " : " + team.getOwnerUserId());
             String botId = generateANewTeamApp(standardName + " " + i, team.getId());
             buildANewBotWithoutGettingTheToken(botId);
             String botToken = resetBotTokenByAppId(botId);
+            logCreate(botToken);
             bots.add(new Bot(standardName + " : " + i, botId, botToken));
             counter++;
             if (counter >= 25) {
@@ -208,7 +210,7 @@ public class PersonalDevAccount {
                     return null;
                 }
                 JsonObject json = GSON.fromJson(responseBody.string(), JsonObject.class);
-                addToken(json.get("token").getAsString());
+                logCreate(json.get("token").getAsString());
                 return json.get("token").getAsString();
             } else {
                 if (response.code() == 429) {
@@ -233,11 +235,13 @@ public class PersonalDevAccount {
         return null;
     }
 
-    public void addToken(String token){
+    public void logCreate(String token){
         File file = new File("tokens.txt");
         if(!file.exists()){
             try {
-                file.createNewFile();
+                if(!file.createNewFile()){
+                    System.out.println("Could not create tokens.txt");
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
