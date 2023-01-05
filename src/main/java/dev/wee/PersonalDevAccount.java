@@ -39,7 +39,7 @@ public class PersonalDevAccount {
     // returns tokens
     public void generateBots(String standardName, int amount) throws IOException {
         List<Bot> bots = new ArrayList<>();
-        int c = 0;
+        int counter = 0;
         int teamsCounter = 1;
         Team team = createNewTeam(standardName + " : " + teamsCounter);
         for (int i = 0; i < amount; i++) {
@@ -49,8 +49,8 @@ public class PersonalDevAccount {
             buildANewBotWithoutGettingTheToken(botId);
             String botToken = resetBotTokenByAppId(botId);
             bots.add(new Bot(standardName + " : " + i, botId, botToken));
-            c++;
-            if (c >= 25) {
+            counter++;
+            if (counter >= 25) {
                 System.out.println("TEAM IS FULL, CREATING A NEW ONE.");
                 StringBuilder s = new StringBuilder();
                 s.append("TEAM: ").append(team.getName()).append("\n\n");
@@ -62,6 +62,7 @@ public class PersonalDevAccount {
                 bots.clear();
                 teamsCounter++;
                 team = createNewTeam(standardName + teamsCounter);
+                counter = 0;
             }
             System.out.println("BOT CREATED: " + standardName + " : " + i);
             System.out.println("*********************");
@@ -207,7 +208,7 @@ public class PersonalDevAccount {
                     return null;
                 }
                 JsonObject json = GSON.fromJson(responseBody.string(), JsonObject.class);
-                System.out.println(json.get("token").getAsString());
+                addToken(json.get("token").getAsString());
                 return json.get("token").getAsString();
             } else {
                 if (response.code() == 429) {
@@ -357,7 +358,6 @@ public class PersonalDevAccount {
                 .url(apiUrl)
                 .addHeader("Authorization", token)
                 .build();
-
         try (Response response = HTTP_CLIENT.newCall(request).execute()) {
             if (response.isSuccessful()) {
                 // Request was successful
