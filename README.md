@@ -8,7 +8,6 @@ This tool allows you to create as many Discord bot tokens as you need. It's safe
 • Java 11+
 - https://www.oracle.com/il-en/java/technologies/javase/jdk11-archive-downloads.html
 - https://docs.aws.amazon.com/corretto/latest/corretto-11-ug/downloads-list.html
-
 • Your Discord account's token (use an alternate account if you're concerned about security; you can also review the code or run it in a sandbox) 
 • Your 2FA Discord secret (used to generate codes for creating bots; if using Authy, you'll need to generate a new secret)
 • A working Discord bot token (used to send information to a Discord channel)
