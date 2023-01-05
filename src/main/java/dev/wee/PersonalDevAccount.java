@@ -6,6 +6,9 @@ import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import okhttp3.*;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -43,8 +46,8 @@ public class PersonalDevAccount {
             System.out.println("*********************");
             System.out.println("NOW CREATING: " + standardName + " : " + i);
             String botId = generateANewTeamApp(standardName + " " + i, team.getId());
-            String botToken = resetBotTokenByAppId(botId);
             buildANewBotWithoutGettingTheToken(botId);
+            String botToken = resetBotTokenByAppId(botId);
             bots.add(new Bot(standardName + " : " + i, botId, botToken));
             c++;
             if (c >= 25) {
@@ -227,6 +230,32 @@ public class PersonalDevAccount {
             return null;
         }
         return null;
+    }
+
+    public void addToken(String token){
+        File file = new File("tokens.txt");
+        if(!file.exists()){
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        FileWriter writer = null;
+        try {
+            writer = new FileWriter(file, true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        assert writer != null;
+        BufferedWriter bufferedWriter = new BufferedWriter(writer);
+        try {
+            bufferedWriter.write(token);
+            bufferedWriter.newLine();
+            bufferedWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void buildANewBotWithoutGettingTheToken(String botId) throws IOException {
