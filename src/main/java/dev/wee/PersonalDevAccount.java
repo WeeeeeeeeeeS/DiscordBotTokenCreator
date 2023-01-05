@@ -46,28 +46,34 @@ public class PersonalDevAccount {
             System.out.println("*********************");
             System.out.println("NOW CREATING: " + standardName + " : " + i);
             logCreate("\n\nTEAM: " + team.getName() + " : " + team.getId() + " : " + team.getOwnerUserId());
-            String botId = generateANewTeamApp(standardName + " " + i, team.getId());
-            buildANewBotWithoutGettingTheToken(botId);
-            String botToken = resetBotTokenByAppId(botId);
-            logCreate(botToken);
-            bots.add(new Bot(standardName + " : " + i, botId, botToken));
-            counter++;
-            if (counter >= 25) {
-                System.out.println("TEAM IS FULL, CREATING A NEW ONE.");
-                StringBuilder s = new StringBuilder();
-                s.append("TEAM: ").append(team.getName()).append("\n\n");
-                for (Bot bot : bots) {
-                    s.append(bot).append("\n");
+            try {
+                String botId = generateANewTeamApp(standardName + " " + i, team.getId());
+                buildANewBotWithoutGettingTheToken(botId);
+                String botToken = resetBotTokenByAppId(botId);
+                logCreate(botToken);
+                bots.add(new Bot(standardName + " : " + i, botId, botToken));
+                counter++;
+                if (counter >= 25) {
+                    System.out.println("TEAM IS FULL, CREATING A NEW ONE.");
+                    StringBuilder s = new StringBuilder();
+                    s.append("TEAM: ").append(team.getName()).append("\n\n");
+                    for (Bot bot : bots) {
+                        s.append(bot).append("\n");
+                    }
+                    channel.sendMessage(s.toString()).queue();
+                    channel.sendMessage("``````").queue();
+                    bots.clear();
+                    teamsCounter++;
+                    team = createNewTeam(standardName + teamsCounter);
+                    counter = 0;
                 }
-                channel.sendMessage(s.toString()).queue();
-                channel.sendMessage("``````").queue();
-                bots.clear();
-                teamsCounter++;
-                team = createNewTeam(standardName + teamsCounter);
-                counter = 0;
+                System.out.println("BOT CREATED: " + standardName + " : " + i);
+                System.out.println("*********************");
+            } catch (Exception e) {
+                System.out.println("Error while creating bot: " + standardName + " : " + i);
+                System.out.println("Error: " + e.getMessage());
+                System.out.println("*********************");
             }
-            System.out.println("BOT CREATED: " + standardName + " : " + i);
-            System.out.println("*********************");
         }
         if (!bots.isEmpty()) {
             StringBuilder s = new StringBuilder();
@@ -210,8 +216,13 @@ public class PersonalDevAccount {
                     return null;
                 }
                 JsonObject json = GSON.fromJson(responseBody.string(), JsonObject.class);
-                logCreate(json.get("token").getAsString());
-                return json.get("token").getAsString();
+                String token = json.get("token").getAsString();
+                if(token == null){
+                    System.out.println("Token is null");
+                    return null;
+                }
+                logCreate(token);
+                return token;
             } else {
                 if (response.code() == 429) {
                     // Server returned a 429 response code, indicating that the client is being rate limited
@@ -236,6 +247,9 @@ public class PersonalDevAccount {
     }
 
     public void logCreate(String token){
+        if(token == null){
+            return;
+        }
         File file = new File("tokens.txt");
         if(!file.exists()){
             try {
@@ -286,6 +300,7 @@ public class PersonalDevAccount {
                         System.out.println("[SEND POST REQUEST] Retrying request in " + retryAfterSeconds / 1000 + " seconds");
                         Thread.sleep(retryAfterSeconds);
                         Thread.sleep(2000);
+                        buildANewBotWithoutGettingTheToken(botId);
                     }
                 } else {
                     // Other non-successful response code, do something else here
@@ -368,7 +383,7 @@ public class PersonalDevAccount {
                 var responseBody = response.body();
                 if (responseBody == null) {
                     System.out.println("Response body is null");
-                    return null;
+                    return Collections.emptyList();
                 }
                 JsonArray jsonArray = GSON.fromJson(responseBody.string(), JsonArray.class);
                 List<Team> teams = new ArrayList<>();
