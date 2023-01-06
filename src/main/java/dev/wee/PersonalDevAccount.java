@@ -209,11 +209,7 @@ public class PersonalDevAccount {
         http.setRequestProperty("Authorization", token);
         http.setRequestProperty("Content-Type", "application/json");
 
-        String generateCode = TwoFactorAuth.generateCurrentCode(this.code);
-
-        System.out.println("CODE: " + generateCode);
-        String data = "{\"code\":\"" + generateCode + "\"}";
-
+        String data = "{\"code\":\"" + TwoFactorAuth.generateCurrentCode(this.code) + "\"}";
         byte[] out = data.getBytes(StandardCharsets.UTF_8);
 
         OutputStream stream = http.getOutputStream();
@@ -228,7 +224,6 @@ public class PersonalDevAccount {
             return response.get("token").getAsString();
         } else {
             if (http.getResponseCode() == 429) {
-
                 String retryAfterHeader = http.getHeaderField("Retry-After");
                 long retryAfterSeconds = Long.parseLong(retryAfterHeader);
                 System.out.println("[RESTART TOKEN] Retrying request in " + retryAfterSeconds / 1000 + " seconds");
