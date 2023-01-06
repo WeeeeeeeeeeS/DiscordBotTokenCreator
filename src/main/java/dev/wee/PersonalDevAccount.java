@@ -6,10 +6,10 @@ import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import okhttp3.*;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,14 +42,14 @@ public class PersonalDevAccount {
         int counter = 0;
         int teamsCounter = 1;
         Team team = createNewTeam(standardName + " : " + teamsCounter);
+        logCreate("\n\nTEAM: " + team.getName() + " : " + team.getId() + " : " + team.getOwnerUserId());
         for (int i = 0; i < amount; i++) {
             System.out.println("*********************");
             System.out.println("NOW CREATING: " + standardName + " : " + i);
-            logCreate("\n\nTEAM: " + team.getName() + " : " + team.getId() + " : " + team.getOwnerUserId());
             try {
                 String botId = generateANewTeamApp(standardName + " " + i, team.getId());
                 buildANewBotWithoutGettingTheToken(botId);
-                String botToken = resetBotTokenByAppId(botId);
+                String botToken = restartToken(botId);
                 logCreate(botToken);
                 bots.add(new Bot(standardName + " : " + i, botId, botToken));
                 counter++;
@@ -150,7 +150,7 @@ public class PersonalDevAccount {
         data.addProperty("bot_require_code_grant", false);
         data.addProperty("flags", 565248);
         if (code != null) {
-            data.addProperty("code", TwoFactorAuth.generateCode(code));
+            data.addProperty("code", TwoFactorAuth.generateCurrentCode(code));
         }
         RequestBody body = RequestBody.create(GSON.toJson(data), MediaType.get("application/json"));
 
@@ -200,60 +200,62 @@ public class PersonalDevAccount {
 
 
     // resets the token of the app
-    public String resetBotTokenByAppId(String applicationId) throws IOException {
-        RequestBody body = RequestBody.create("{\"code\":\"" + TwoFactorAuth.generateCode(code) + "\"}", MediaType.get("application/json"));
-        Request request = new Request.Builder()
-                .url(API_URL + "/" + applicationId + "/bot/reset")
-                .post(body)
-                .addHeader("Authorization", token)
-                .build();
-        try (Response response = HTTP_CLIENT.newCall(request).execute()) {
-            if (response.isSuccessful()) {
-                // request was successful
-                var responseBody = response.body();
-                if (responseBody == null) {
-                    System.out.println("Response body is null");
-                    return null;
+    public String restartToken(String applicationId) throws IOException, InterruptedException {
+        URL url = new URL("https://discord.com/api/v9/applications/" + applicationId + "/bot/reset");
+        HttpURLConnection http = (HttpURLConnection) url.openConnection();
+        http.setRequestMethod("POST");
+        http.setDoOutput(true);
+        http.setRequestProperty("Accept", "application/json");
+        http.setRequestProperty("Authorization", token);
+        http.setRequestProperty("Content-Type", "application/json");
+
+        String generateCode = TwoFactorAuth.generateCurrentCode(this.code);
+
+        System.out.println("CODE: " + generateCode);
+        String data = "{\"code\":\"" + generateCode + "\"}";
+
+        byte[] out = data.getBytes(StandardCharsets.UTF_8);
+
+        OutputStream stream = http.getOutputStream();
+        stream.write(out);
+        System.out.println(http.getResponseMessage());
+        int responseCode = http.getResponseCode();
+        if (responseCode == 200) {
+            InputStreamReader reader = new InputStreamReader(http.getInputStream());
+            JsonObject response = new Gson().fromJson(reader, JsonObject.class);
+            reader.close();
+            Thread.sleep(30000);
+            return response.get("token").getAsString();
+        } else {
+            if (http.getResponseCode() == 429) {
+
+                String retryAfterHeader = http.getHeaderField("Retry-After");
+                long retryAfterSeconds = Long.parseLong(retryAfterHeader);
+                System.out.println("[RESTART TOKEN] Retrying request in " + retryAfterSeconds / 1000 + " seconds");
+                try {
+                    Thread.sleep(retryAfterSeconds);
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-                JsonObject json = GSON.fromJson(responseBody.string(), JsonObject.class);
-                String token = json.get("token").getAsString();
-                if(token == null){
-                    System.out.println("Token is null");
-                    return null;
-                }
-                logCreate(token);
-                return token;
-            } else {
-                if (response.code() == 429) {
-                    // Server returned a 429 response code, indicating that the client is being rate limited
-                    String retryAfterHeader = response.headers().get("Retry-After");
-                    if (retryAfterHeader != null) {
-                        // Retry-After header is present, parse the value to get the number of seconds to wait
-                        long retryAfterSeconds = Long.parseLong(retryAfterHeader);
-                        System.out.println("[RESET BOT TOKEN] Retrying request in " + retryAfterSeconds / 1000 + " seconds");
-                        Thread.sleep(retryAfterSeconds);
-                        Thread.sleep(2000);
-                        return resetBotTokenByAppId(applicationId);
-                    }
-                } else {
-                    return null;
-                }
+                return restartToken(applicationId);
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return null;
         }
+        System.out.println("[RESTART TOKEN] Request failed: " + http.getResponseCode() + " " + http.getResponseMessage());
         return null;
     }
 
-    public void logCreate(String token){
-        if(token == null){
+
+    public void logCreate(String token) {
+        if (token == null) {
+            System.out.println("Token is null");
             return;
         }
+        System.out.println("Token: " + token);
         File file = new File("tokens.txt");
-        if(!file.exists()){
+        if (!file.exists()) {
             try {
-                if(!file.createNewFile()){
+                if (!file.createNewFile()) {
                     System.out.println("Could not create tokens.txt");
                 }
             } catch (IOException e) {
@@ -322,7 +324,7 @@ public class PersonalDevAccount {
         data.addProperty("bot_require_code_grant", false);
         data.addProperty("flags", 565248);
         if (code != null) {
-            data.addProperty("code", TwoFactorAuth.generateCode(code));
+            data.addProperty("code", TwoFactorAuth.generateCurrentCode(code));
         }
         RequestBody body = RequestBody.create(GSON.toJson(data), MediaType.get("application/json"));
 
@@ -343,6 +345,7 @@ public class PersonalDevAccount {
                     return null;
                 }
                 JsonObject json = GSON.fromJson(responseBody.string(), JsonObject.class);
+                Thread.sleep(30000);
                 return json.get("id").getAsString();
             } else {
                 if (response.code() == 429) {
