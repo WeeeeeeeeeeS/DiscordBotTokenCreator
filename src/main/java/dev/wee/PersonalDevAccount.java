@@ -3,6 +3,8 @@ package dev.wee;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import okhttp3.*;
 
@@ -14,6 +16,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 public class PersonalDevAccount {
@@ -34,11 +37,14 @@ public class PersonalDevAccount {
         this.channel = channel;
     }
 
-
+    public void getFreeTeam() throws IOException {
+        List<Team> t = getTeams();
+    }
     // creates as many bots you want *takes a lot of time*
     // returns tokens
     public void generateBots(String standardName, int amount) throws IOException {
         List<Bot> bots = new ArrayList<>();
+        int total = 0;
         int counter = 0;
         int teamsCounter = 1;
         Team team = createNewTeam(standardName + " : " + teamsCounter);
@@ -53,7 +59,8 @@ public class PersonalDevAccount {
                 logCreate(botToken);
                 bots.add(new Bot(standardName + " : " + i, botId, botToken));
                 counter++;
-                if (counter >= 25) {
+                total++;
+                if (counter >= 24) {
                     System.out.println("TEAM IS FULL, CREATING A NEW ONE.");
                     StringBuilder s = new StringBuilder();
                     s.append("TEAM: ").append(team.getName()).append("\n\n");
@@ -84,6 +91,8 @@ public class PersonalDevAccount {
             channel.sendMessage(s.toString()).queue();
             channel.sendMessage("``````").queue();
         }
+        System.out.println("TOTAL CREATED: " + total);
+        System.out.println("*********************");
     }
 
     public Team createNewTeam(String name) throws IOException {
@@ -141,7 +150,7 @@ public class PersonalDevAccount {
     }
 
     // creates a new app & returns its id
-    public String generateANewTeamApp(String name, String teamId) throws IOException {
+    public  String generateANewTeamApp(String name, String teamId) throws IOException {
         // Create the request body
         JsonObject data = new JsonObject();
         data.addProperty("name", name);
@@ -214,7 +223,6 @@ public class PersonalDevAccount {
 
         OutputStream stream = http.getOutputStream();
         stream.write(out);
-        System.out.println(http.getResponseMessage());
         int responseCode = http.getResponseCode();
         if (responseCode == 200) {
             InputStreamReader reader = new InputStreamReader(http.getInputStream());
@@ -226,7 +234,7 @@ public class PersonalDevAccount {
             if (http.getResponseCode() == 429) {
                 String retryAfterHeader = http.getHeaderField("Retry-After");
                 long retryAfterSeconds = Long.parseLong(retryAfterHeader);
-                System.out.println("[RESTART TOKEN] Retrying request in " + retryAfterSeconds / 1000 + " seconds");
+                System.out.println("[RESTART TOKEN] [RESET TOKEN] Retrying request in " + retryAfterSeconds / 1000 + " seconds");
                 try {
                     Thread.sleep(retryAfterSeconds);
                     Thread.sleep(2000);
@@ -236,7 +244,7 @@ public class PersonalDevAccount {
                 return restartToken(applicationId);
             }
         }
-        System.out.println("[RESTART TOKEN] Request failed: " + http.getResponseCode() + " " + http.getResponseMessage());
+        System.out.println("[RESTART TOKEN] [RESET TOKEN] Request failed: " + http.getResponseCode() + " " + http.getResponseMessage());
         return null;
     }
 
@@ -246,7 +254,7 @@ public class PersonalDevAccount {
             System.out.println("Token is null");
             return;
         }
-        System.out.println("Token: " + token);
+        System.out.println("[LOGGING] Token: " + token);
         File file = new File("tokens.txt");
         if (!file.exists()) {
             try {
@@ -276,9 +284,10 @@ public class PersonalDevAccount {
 
     public void buildANewBotWithoutGettingTheToken(String botId) throws IOException {
         // Create the request
+        String data = "{\"code\":\"" + TwoFactorAuth.generateCurrentCode(this.code) + "\"}";
         Request request = new Request.Builder()
                 .url(API_URL + "/" + botId + "/bot")
-                .post(RequestBody.create(MediaType.get("application/json"), "{}"))
+                .post(RequestBody.create(MediaType.get("application/json"), data))
                 .addHeader("Authorization", token)
                 .build();
 
@@ -294,7 +303,7 @@ public class PersonalDevAccount {
                     if (retryAfterHeader != null) {
                         // Retry-After header is present, parse the value to get the number of seconds to wait
                         long retryAfterSeconds = Long.parseLong(retryAfterHeader);
-                        System.out.println("[SEND POST REQUEST] Retrying request in " + retryAfterSeconds / 1000 + " seconds");
+                        System.out.println("[SEND POST REQUEST] [buildANewBotWithoutGettingTheToken] Retrying request in " + retryAfterSeconds / 1000 + " seconds");
                         Thread.sleep(retryAfterSeconds);
                         Thread.sleep(2000);
                         buildANewBotWithoutGettingTheToken(botId);
@@ -304,6 +313,9 @@ public class PersonalDevAccount {
                     System.out.println("Request failed with response code " + response);
                 }
             }
+            // get Token
+            System.out.println("Sleeping 30s to generate a new 2fa code");
+            Thread.sleep(30000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -409,7 +421,6 @@ public class PersonalDevAccount {
             e.printStackTrace();
             return Collections.emptyList();
         }
-
     }
 
 }
