@@ -60,7 +60,7 @@ public class PersonalDevAccount {
                 bots.add(new Bot(standardName + " : " + i, botId, botToken));
                 counter++;
                 total++;
-                if (counter >= 24) {
+                if (counter >= 25) {
                     System.out.println("TEAM IS FULL, CREATING A NEW ONE.");
                     StringBuilder s = new StringBuilder();
                     s.append("TEAM: ").append(team.getName()).append("\n\n");
