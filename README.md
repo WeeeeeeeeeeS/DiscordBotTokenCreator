@@ -32,7 +32,7 @@ https://www.virustotal.com/gui/file/503aaa6e76e3966486b22eb0e07ce344a0256e0f7805
 - A Config.json file will be created. Fill in the required information in the file:
 ```
   "selfToken": your Discord token
-  "secret": your secret key (Example: kjso efox en5x exsa)
+  "secret": your 2FA secret key (Example: kjso efox en5x exsa) ( https://github.com/WeeeeeeeeeeS/DiscordBotTokenCreator/wiki )
   "channelId": the ID of the channel where the bot will send the tokens
   "standardName": the desired name for the bots
   "botTokenToSendInfo": a working Discord bot token
