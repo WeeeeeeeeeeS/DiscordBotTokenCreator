@@ -138,6 +138,8 @@ public class PersonalDevAccount {
                         System.out.println("INVALID SELF-TOKEN!");
                     }
                     System.out.println(response);
+                    assert response.body() != null;
+                    System.out.println("Body: " + response.body().string());
                     System.exit(0);
                     return null;
                 }
@@ -200,6 +202,7 @@ public class PersonalDevAccount {
                 } else {
                     // Request failed
                     System.out.println("[GENERATE BOT] Request failed: " + response.code() + " " + response.message());
+                    System.out.println("Response body: " + response.body().string());
                     return null;
                 }
             }
@@ -245,6 +248,7 @@ public class PersonalDevAccount {
             }
         }
         System.out.println("[RESTART TOKEN] [RESET TOKEN] Request failed: " + http.getResponseCode() + " " + http.getResponseMessage());
+        System.out.println("Response body: " + http.getResponseMessage());
         return null;
     }
 
@@ -311,6 +315,7 @@ public class PersonalDevAccount {
                 } else {
                     // Other non-successful response code, do something else here
                     System.out.println("Request failed with response code " + response);
+                    System.out.println("Response body: " + response.body().string());
                 }
             }
             // get Token
